@@ -2,11 +2,10 @@
 # coding: utf-8
 
 """
-tq_dq - Task Queue and Data Queue
+dqp - Data Queue with a greenlet Pool
 
-This demo combines the benefits of both ``task_queue`` and ``data_queue``,
-it use a centralized master greenlet to control both task scheduling
-and data processing.
+This is an enhanced version of ``gevent_dq_demo.py``, it use a greenlet pool
+to restrict the number of greenlets that could be spawned simultaneously.
 """
 
 from __future__ import print_function
@@ -19,29 +18,25 @@ demo_helpers.mock_uris()
 
 import gevent
 from gevent.queue import Queue
+from gevent.pool import Pool
 import urllib2
 
 
-def url_worker(name, tq, dq):
-    print('worker start', name)
-    while True:
-        url = tq.get()
-        print('worker {} get {}'.format(name, url))
+def fetch_and_extract(url, data_queue):
+    r = urllib2.urlopen(url)
+    html = r.read()
 
-        r = urllib2.urlopen(url)
-        html = r.read()
-
-        hrefs = demo_helpers.extract_hrefs(html)
-
-        dq.put_nowait((url, hrefs))
+    hrefs = demo_helpers.extract_hrefs(html)
+    #print('fetch ', url, html, hrefs)
+    data_queue.put_nowait((url, hrefs))
 
 
 def recursive_crawl(url):
     all_urls = set()
     processing_urls = set()
     processed_urls = set()
-    task_queue = Queue()
     data_queue = Queue()
+    gpool = Pool(10)
 
     def is_processed(url):
         return url in processed_urls
@@ -66,16 +61,7 @@ def recursive_crawl(url):
             all_urls.add(url)
 
     mark_processing(url)
-    task_queue.put_nowait(url)
-
-    # Start workers
-    workers = []
-    for i in xrange(10):
-        workers.append(
-            gevent.spawn(url_worker,
-                         i, task_queue, data_queue)
-        )
-    print('workers', len(workers))
+    fetch_and_extract(url, data_queue)
 
     while processing_urls:
         if data_queue.empty():
@@ -91,7 +77,7 @@ def recursive_crawl(url):
 
             if not is_processed(sub_url) and not is_processing(sub_url):
                 mark_processing(sub_url)
-                task_queue.put_nowait(sub_url)
+                gpool.spawn(fetch_and_extract, sub_url, data_queue)
 
     print('Processed', len(processed_urls), 'All', len(all_urls))
     print('Total latency', demo_helpers.TOTAL_LATENCY)

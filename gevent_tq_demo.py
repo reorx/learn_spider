@@ -2,7 +2,15 @@
 # coding: utf-8
 
 """
-Joinable Queue demo
+tq - Task Queue
+
+This demo use a ``task_queue`` to schedule url fetching tasks.
+Unlike ``gevent_dq_demo.py``, the fetched data will be handled in task,
+rather that in a centralized master greenlet, new tasks are also
+generated in task itself.
+
+Since each task will modify the global sets which store the urls and processing state,
+the working flow of this program is not very clear, thus it's not recommended.
 """
 
 from __future__ import print_function

@@ -2,7 +2,16 @@
 # coding: utf-8
 
 """
-Producer / Consumer demo
+dq - Data Queue
+
+This demo consists of two parts:
+1. the master greenlet, ``recursive_crawl``
+2. the spawned greenlets to fetch url, ``fetch_and_extract``
+
+When urls are extracted from a html, every one of them, if hasn't been processed yet,
+will spawn a new greenlet to fetch itself. This may be dangerous
+if a html contains a huge number of urls, then almost the same amount of
+greenlets will be spawned without limitation.
 """
 
 from __future__ import print_function
