@@ -52,10 +52,11 @@ def recursive_crawl(url):
     def mark_processed(url):
         if is_processing(url):
             processing_urls.remove(url)
-        if is_processed(url):
-            print('Duplicate processed url {}'.format(url))
-        else:
-            processed_urls.add(url)
+        #if is_processed(url):
+        #    print('Duplicate processed url {}'.format(url))
+        #else:
+        #    processed_urls.add(url)
+        processed_urls.add(url)
 
     def mark_processing(url):
         processing_urls.add(url)
@@ -89,6 +90,7 @@ def recursive_crawl(url):
         for sub_url in hrefs:
             add_to_all(sub_url)
 
+            # test duplication
             if not is_processed(sub_url) and not is_processing(sub_url):
                 mark_processing(sub_url)
                 task_queue.put_nowait(sub_url)
